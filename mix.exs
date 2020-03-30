@@ -31,9 +31,13 @@ defmodule OpenAPICompiler.MixProject do
         "coveralls.detail": :test,
         "coveralls.post": :test,
         "coveralls.html": :test
-      ]
+      ],
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp description do
     """
@@ -58,7 +62,8 @@ defmodule OpenAPICompiler.MixProject do
       {:ex_doc, "~> 0.21", runtime: false, only: [:dev, :test]},
       {:dialyxir, "~> 1.0", runtime: false, only: [:dev]},
       {:excoveralls, "~> 0.5", only: [:test], runtime: false},
-      {:credo, "~> 1.0", only: [:dev], runtime: false}
+      {:credo, "~> 1.0", only: [:dev], runtime: false},
+      {:assert_value, "~> 0.9", only: [:dev, :test]}
     ]
   end
 

@@ -7,7 +7,7 @@ defmodule OpenAPICompiler.Typespec do
     quote location: :keep,
           bind_quoted: [name: name, read_or_write: read_or_write, value: value, context: context] do
       name = OpenAPICompiler.Typespec.type_name(name)
-      typespec = OpenAPICompiler.Typespec.typespec(value, read_or_write, context)
+      typespec = OpenAPICompiler.Typespec.typespec(value, read_or_write, context, __MODULE__)
 
       for type <- [value | value["allOf"] || []] do
         case Map.fetch(type, "description") do
@@ -20,7 +20,7 @@ defmodule OpenAPICompiler.Typespec do
     end
   end
 
-  def api_response(definition, context) do
+  def api_response(definition, context, caller) do
     definition
     |> Map.get("responses", %{})
     |> Enum.flat_map(fn {code, media_types} ->
@@ -48,7 +48,7 @@ defmodule OpenAPICompiler.Typespec do
          end}
 
       {code, type} ->
-        {code, typespec(type, :read, context)}
+        {code, typespec(type, :read, context, caller)}
     end)
     |> Enum.map(fn
       {"default", typespec} ->
@@ -74,34 +74,42 @@ defmodule OpenAPICompiler.Typespec do
     )
   end
 
-  def api_config(definition, %OpenAPICompiler.Context{base_module: base_module} = context) do
+  def api_config(definition, %OpenAPICompiler.Context{base_module: base_module} = context, caller) do
     {:%{}, [],
      [
        optional?(
          has_no_required_parameter?(definition, "query"),
          :query,
-         parameters_type(definition, "query", context, true)
+         parameters_type(definition, "query", context, true, caller)
        ),
        optional?(
          has_no_required_parameter?(definition, "header"),
          :headers,
-         parameters_type(definition, "header", context, true)
+         parameters_type(definition, "header", context, true, caller)
        ),
        optional?(
          has_no_required_parameter?(definition, "path"),
          :path,
-         parameters_type(definition, "path", context, false)
+         parameters_type(definition, "path", context, false, caller)
        ),
        optional?(
          definition["requestBody"]["required"] != true,
          :body,
-         request_body_type(definition, context)
+         request_body_type(definition, context, caller)
        ),
        optional?(
          true,
          :server,
-         quote location: :keep do
-           unquote(base_module).server_parameters()
+         case caller do
+           ^base_module ->
+             quote location: :keep do
+               server_parameters()
+             end
+
+           _ ->
+             quote location: :keep do
+               unquote(base_module).server_parameters()
+             end
          end
        ),
        optional?(
@@ -114,7 +122,7 @@ defmodule OpenAPICompiler.Typespec do
      ]}
   end
 
-  defp request_body_type(definition, context) do
+  defp request_body_type(definition, context, caller) do
     (definition["requestBody"]["content"] || %{})
     |> Enum.map(fn {_media_type, media_type} ->
       media_type["schema"]
@@ -127,7 +135,7 @@ defmodule OpenAPICompiler.Typespec do
         end
 
       schema ->
-        typespec(schema, :write, context)
+        typespec(schema, :write, context, caller)
     end)
     |> Kernel.++(
       if Map.has_key?(definition["requestBody"]["content"] || %{}, "multipart/form-data") do
@@ -158,7 +166,7 @@ defmodule OpenAPICompiler.Typespec do
     |> Enum.all?(&(&1["required"] != true))
   end
 
-  defp parameters_type(definition, type, context, allow_more) do
+  defp parameters_type(definition, type, context, allow_more, caller) do
     parameters =
       definition
       |> Map.get("parameters", [])
@@ -169,7 +177,7 @@ defmodule OpenAPICompiler.Typespec do
        optional?(
          parameter_definition["required"] != true,
          String.to_atom(parameter_definition["name"]),
-         typespec(parameter_definition["schema"], :write, context)
+         typespec(parameter_definition["schema"], :write, context, caller)
        )
      end) ++
        if allow_more do
@@ -192,23 +200,23 @@ defmodule OpenAPICompiler.Typespec do
   defmacro server_typespec(context) do
     quote location: :keep, bind_quoted: [context: context, caller: __MODULE__] do
       %OpenAPICompiler.Context{server: server} = context
-      server_parameters_type = caller.server_type(server, context)
+      server_parameters_type = caller.server_type(server, context, __MODULE__)
       @type server_parameters :: unquote(server_parameters_type)
     end
   end
 
-  def server_type(%{"variables" => variables}, context) do
+  def server_type(%{"variables" => variables}, context, caller) do
     {:%{}, [],
      Enum.map(variables, fn {name, definition} ->
        optional?(
          true,
          String.to_atom(name),
-         definition |> Map.put("type", "string") |> typespec(:write, context)
+         definition |> Map.put("type", "string") |> typespec(:write, context, caller)
        )
      end)}
   end
 
-  def server_type(_server, _context) do
+  def server_type(_server, _context, _caller) do
     quote location: :keep do
       %{}
     end
@@ -222,36 +230,62 @@ defmodule OpenAPICompiler.Typespec do
     {{:optional, [], [name]}, type}
   end
 
-  def typespec(type, read_or_write, context)
+  def typespec(type, read_or_write, context, caller)
 
-  def typespec(%{"nullable" => true} = type, read_or_write, context) do
-    {:|, [], [typespec(%{type | "nullable" => false}, read_or_write, context), nil]}
+  def typespec(%{"nullable" => true} = type, read_or_write, context, caller) do
+    {:|, [], [typespec(%{type | "nullable" => false}, read_or_write, context, caller), nil]}
   end
 
-  def typespec(%{__ref__: ["components", "schemas", name]}, :read, %{
-        components_schema_read_module: module
-      }) do
-    quote location: :keep do
-      unquote(module).unquote(type_name(name))
+  def typespec(
+        %{__ref__: ["components", "schemas", name]},
+        :read,
+        %{
+          components_schema_read_module: module
+        },
+        caller
+      ) do
+    case caller do
+      ^module ->
+        quote location: :keep do
+          unquote(type_name(name))
+        end
+
+      _ ->
+        quote location: :keep do
+          unquote(module).unquote(type_name(name))
+        end
     end
   end
 
-  def typespec(%{__ref__: ["components", "schemas", name]}, :write, %{
-        components_schema_write_module: module
-      }) do
-    quote location: :keep do
-      unquote(module).unquote(type_name(name))
+  def typespec(
+        %{__ref__: ["components", "schemas", name]},
+        :write,
+        %{
+          components_schema_write_module: module
+        },
+        caller
+      ) do
+    case caller do
+      ^module ->
+        quote location: :keep do
+          unquote(type_name(name))
+        end
+
+      _ ->
+        quote location: :keep do
+          unquote(module).unquote(type_name(name))
+        end
     end
   end
 
-  def typespec(%{"type" => "string", "format" => binary_format}, _, _)
+  def typespec(%{"type" => "string", "format" => binary_format}, _, _, _)
       when binary_format in ["byte", "binary"] do
     quote location: :keep do
       binary()
     end
   end
 
-  def typespec(%{"type" => "string", "enum" => options}, :write, _) do
+  def typespec(%{"type" => "string", "enum" => options}, :write, _, _) do
     options
     |> Enum.map(&String.to_atom/1)
     |> Enum.reduce(nil, fn
@@ -260,38 +294,43 @@ defmodule OpenAPICompiler.Typespec do
     end)
   end
 
-  def typespec(%{"type" => "string"}, _, _) do
+  def typespec(%{"type" => "string"}, _, _, _) do
     quote location: :keep do
       String.t()
     end
   end
 
-  def typespec(%{"type" => "boolean"}, _, _) do
+  def typespec(%{"type" => "boolean"}, _, _, _) do
     quote location: :keep do
       boolean()
     end
   end
 
-  def typespec(%{"type" => "number", "format" => format}, _, _)
+  def typespec(%{"type" => "number", "format" => format}, _, _, _)
       when format in ["float", "double"] do
     quote location: :keep do
       float()
     end
   end
 
-  def typespec(%{"type" => "number"}, _, _) do
+  def typespec(%{"type" => "number"}, _, _, _) do
     quote location: :keep do
       float() | integer()
     end
   end
 
-  def typespec(%{"type" => "integer"}, _, _) do
+  def typespec(%{"type" => "integer"}, _, _, _) do
     quote location: :keep do
       integer()
     end
   end
 
-  def typespec(%{"type" => "object", "properties" => properties} = type, read_or_write, context) do
+  def typespec(
+        %{"type" => "object", "properties" => properties} = type,
+        read_or_write,
+        context,
+        caller
+      ) do
     required = Map.get(type, "required", [])
 
     {:%{}, [],
@@ -302,40 +341,41 @@ defmodule OpenAPICompiler.Typespec do
          property_definition,
          read_or_write,
          Enum.member?(required, property_name),
-         context
+         context,
+         caller
        )
      end)
      |> Enum.reject(&is_nil/1)}
   end
 
-  def typespec(%{"type" => "object"}, _, _) do
+  def typespec(%{"type" => "object"}, _, _, _) do
     quote location: :keep do
       map()
     end
   end
 
-  def typespec(%{"type" => "array", "items" => items}, read_or_write, context) do
+  def typespec(%{"type" => "array", "items" => items}, read_or_write, context, caller) do
     quote location: :keep do
-      list(unquote(typespec(items, read_or_write, context)))
+      list(unquote(typespec(items, read_or_write, context, caller)))
     end
   end
 
-  def typespec(%{"type" => "array"}, _, _) do
+  def typespec(%{"type" => "array"}, _, _, _) do
     quote location: :keep do
       list()
     end
   end
 
-  def typespec(%{"oneOf" => options}, read_or_write, context) do
+  def typespec(%{"oneOf" => options}, read_or_write, context, caller) do
     options
-    |> Enum.map(&typespec(&1, read_or_write, context))
+    |> Enum.map(&typespec(&1, read_or_write, context, caller))
     |> Enum.reduce(nil, fn
       value, nil -> value
       value, acc -> {:|, [], [value, acc]}
     end)
   end
 
-  def typespec(%{"allOf" => requirements}, read_or_write, context) do
+  def typespec(%{"allOf" => requirements}, read_or_write, context, caller) do
     requirements
     |> Enum.reduce(%{}, fn value, acc ->
       Map.merge(acc, value, fn
@@ -345,17 +385,17 @@ defmodule OpenAPICompiler.Typespec do
       end)
     end)
     |> Map.drop([:__ref__])
-    |> typespec(read_or_write, context)
+    |> typespec(read_or_write, context, caller)
   end
 
-  def typespec(%{"type" => _} = type, _, _) do
+  def typespec(%{"type" => _} = type, _, _, _) do
     raise "Unknown #{inspect(type)}"
   end
 
-  def typespec(%{} = type, read_or_write, context) do
+  def typespec(%{} = type, read_or_write, context, caller) do
     type
     |> Map.put("type", "object")
-    |> typespec(read_or_write, context)
+    |> typespec(read_or_write, context, caller)
   end
 
   def type_name(name) do
@@ -364,21 +404,22 @@ defmodule OpenAPICompiler.Typespec do
     |> String.to_atom()
   end
 
-  defp property(name, definition, read_or_write, required, context)
+  defp property(name, definition, read_or_write, required, context, caller)
 
-  defp property(_, %{"readOnly" => true}, :write, _, _) do
+  defp property(_, %{"readOnly" => true}, :write, _, _, _) do
     nil
   end
 
-  defp property(_, %{"writeOnly" => true}, :read, _, _) do
+  defp property(_, %{"writeOnly" => true}, :read, _, _, _) do
     nil
   end
 
-  defp property(name, definition, read_or_write, true, context) do
-    {String.to_atom(name), typespec(definition, read_or_write, context)}
+  defp property(name, definition, read_or_write, true, context, caller) do
+    {String.to_atom(name), typespec(definition, read_or_write, context, caller)}
   end
 
-  defp property(name, definition, read_or_write, false, context) do
-    {{:optional, [], [String.to_atom(name)]}, typespec(definition, read_or_write, context)}
+  defp property(name, definition, read_or_write, false, context, caller) do
+    {{:optional, [], [String.to_atom(name)]},
+     typespec(definition, read_or_write, context, caller)}
   end
 end

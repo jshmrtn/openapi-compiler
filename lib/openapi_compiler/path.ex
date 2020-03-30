@@ -36,8 +36,8 @@ defmodule OpenAPICompiler.Path do
           ] do
       %OpenAPICompiler.Context{base_module: base_module} = context
 
-      config_type = OpenAPICompiler.Typespec.api_config(definition, context)
-      response_type = OpenAPICompiler.Typespec.api_response(definition, context)
+      config_type = OpenAPICompiler.Typespec.api_config(definition, context, __MODULE__)
+      response_type = OpenAPICompiler.Typespec.api_response(definition, context, __MODULE__)
 
       fn_name =
         caller.normalize_name(

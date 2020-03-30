@@ -43,6 +43,7 @@ defmodule OpenAPICompiler.Context do
       |> Map.put_new(:base_module, module)
       |> Map.put_new(:components_schema_read_module, Module.concat(module, Schema.Read))
       |> Map.put_new(:components_schema_write_module, Module.concat(module, Schema.Write))
+      |> Map.put_new(:external_resources, [])
     )
   end
 
@@ -56,6 +57,19 @@ defmodule OpenAPICompiler.Context do
       yml_path
       |> String.to_charlist()
       |> :yamerl.decode_file(str_node_as_binary: true)
+      |> to_map
+    end)
+  end
+
+  defp normalize_config_yml(%{yml: yml} = opts) do
+    opts
+    |> Map.drop([:yml])
+    |> Map.put_new_lazy(:schema, fn ->
+      Application.ensure_all_started(:yamerl)
+
+      yml
+      |> String.to_charlist()
+      |> :yamerl.decode(str_node_as_binary: true)
       |> to_map
     end)
   end
