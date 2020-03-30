@@ -120,6 +120,7 @@ defmodule OpenAPICompiler.Context do
 
   defp lookup_refs(other, _, _), do: other
 
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp lookup_server(%{schema: schema} = opts) do
     servers =
       schema

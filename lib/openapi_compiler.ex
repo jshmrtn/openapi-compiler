@@ -61,7 +61,9 @@ defmodule OpenAPICompiler do
 
       require OpenAPICompiler.Component.Schema
 
+      # credo:disable-for-next-line Credo.Check.Design.AliasUsage
       OpenAPICompiler.Component.Schema.define_module(context, :read)
+      # credo:disable-for-next-line Credo.Check.Design.AliasUsage
       OpenAPICompiler.Component.Schema.define_module(context, :write)
 
       require OpenAPICompiler.Path

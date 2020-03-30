@@ -1,5 +1,10 @@
 # OpenAPICompiler
 
+[![Hex docs](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat)](https://hexdocs.pm/openapi_compiler)
+![.github/workflows/elixir.yml](https://github.com/jshmrtn/openapi-compiler/workflows/.github/workflows/elixir.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/jshmrtn/openapi-compiler/badge.svg?branch=master)](https://coveralls.io/r/jshmrtn/openapi-compiler?branch=master)
+[![Hex.pm](https://img.shields.io/hexpm/dt/openapi_compiler.svg)](https://hex.pm/packages/openapi_compiler)
+
 :warning: :warning: This library is incomplete and experimental! :warning: :warning:
 
 Compile OpenApi 3.0 Elixir Client from JSON / Yaml.

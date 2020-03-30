@@ -3,6 +3,8 @@ defmodule OpenAPICompiler.Middleware.Server do
 
   @behaviour Tesla.Middleware
 
+  alias Tesla.Middleware.BaseUrl
+
   @impl Tesla.Middleware
   def call(%Tesla.Env{opts: opts, url: url} = env, next, server) do
     url
@@ -12,7 +14,7 @@ defmodule OpenAPICompiler.Middleware.Server do
         Tesla.run(env, next)
 
       _ ->
-        Tesla.Middleware.BaseUrl.call(env, next, replace_variables(server, opts))
+        BaseUrl.call(env, next, replace_variables(server, opts))
     end
   end
 

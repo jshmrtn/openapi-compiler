@@ -1,3 +1,5 @@
+# credo:disable-for-this-file
+
 case Mix.env() do
   :prod ->
     nil

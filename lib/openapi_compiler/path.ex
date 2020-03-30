@@ -24,6 +24,7 @@ defmodule OpenAPICompiler.Path do
     end
   end
 
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defmacro path_definition(path, method, definition, context) do
     quote location: :keep,
           bind_quoted: [
