@@ -19,6 +19,11 @@ defmodule OpenAPICompiler.Middleware.Server do
   end
 
   defp replace_variables(%{"url" => url} = server, opts) do
+    user_opts =
+      opts
+      |> Keyword.get(:server_parameters, %{})
+      |> normalize_keys
+
     UriTemplate.expand(
       url,
       server
@@ -27,8 +32,15 @@ defmodule OpenAPICompiler.Middleware.Server do
         {key, value["default"]}
       end)
       |> Enum.reject(&is_nil(elem(&1, 1)))
-      |> Map.new()
-      |> Map.merge(Keyword.get(opts, :server_parameters, %{}))
+      |> normalize_keys
+      |> Keyword.merge(user_opts)
     )
+  end
+
+  defp normalize_keys(variables) do
+    Enum.map(variables, fn
+      {key, value} when is_atom(key) -> {key, value}
+      {key, value} when is_binary(key) -> {String.to_existing_atom(key), value}
+    end)
   end
 end

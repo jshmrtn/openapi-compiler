@@ -1,0 +1,155 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Swagger Petstore",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{env}.localhost:{port}",
+      "variables": {
+        "env": {
+          "default": "dev",
+          "enum": [
+            "dev",
+            "test",
+            "prod"
+          ]
+        },
+        "port": {
+          "default": "8080"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Test": {
+        "description": "Bla Bla",
+        "type": "integer",
+        "nullable": true
+      },
+      "Test2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Test"
+          },
+          {
+            "nullable": false
+          }
+        ]
+      },
+      "Address": {
+        "type": "object",
+        "required": [
+          "city",
+          "zip",
+          "street",
+          "lineOne",
+          "lineTwo"
+        ],
+        "properties": {
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "lineOne": {
+            "type": "string",
+            "readOnly": true
+          },
+          "lineTwo": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      },
+      "OneOfDiscriminatedNormal": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Address"
+          },
+          {
+            "$ref": "#/components/schemas/Test2"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
+      },
+      "OneOfDiscriminatedDefined": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Address"
+          },
+          {
+            "$ref": "#/components/schemas/Test2"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "one": "#/components/schemas/Address",
+            "two": "#/components/schemas/Test2"
+          }
+        }
+      },
+      "OneOfUndiscriminated": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Address"
+          },
+          {
+            "$ref": "#/components/schemas/Test2"
+          }
+        ]
+      }
+    }
+  }
+}

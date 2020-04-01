@@ -5,6 +5,10 @@ defmodule OpenAPICompiler.Path do
     quote location: :keep do
       %OpenAPICompiler.Context{schema: schema} = unquote(context)
 
+      require OpenAPICompiler.Typespec.Api.Response
+
+      OpenAPICompiler.Typespec.Api.Response.base_typespecs()
+
       import unquote(__MODULE__)
 
       for root <- schema,
@@ -15,11 +19,6 @@ defmodule OpenAPICompiler.Path do
         unless is_nil(definition["operationId"]) do
           alias_path(definition["operationId"], method, path, unquote(context))
         end
-      end
-
-      case @spec do
-        [] -> @moduledoc false
-        _ -> @moduledoc "TODO"
       end
     end
   end
@@ -36,8 +35,7 @@ defmodule OpenAPICompiler.Path do
           ] do
       %OpenAPICompiler.Context{base_module: base_module} = context
 
-      config_type = OpenAPICompiler.Typespec.api_config(definition, context, __MODULE__)
-      response_type = OpenAPICompiler.Typespec.api_response(definition, context, __MODULE__)
+      config_type = OpenAPICompiler.Typespec.Api.Config.type(definition, context, __MODULE__)
 
       fn_name =
         caller.normalize_name(
@@ -49,55 +47,64 @@ defmodule OpenAPICompiler.Path do
             end
         )
 
+      require OpenAPICompiler.Typespec.Api.Response
+      response_type_name = :"#{fn_name}_response"
+      OpenAPICompiler.Typespec.Api.Response.typespec(response_type_name, definition, context)
+
+      require OpenAPICompiler.Typespec.Api.Config
+      config_type_name = :"#{fn_name}_config"
+      OpenAPICompiler.Typespec.Api.Config.typespec(config_type_name, definition, context)
+
       @doc """
       `#{String.upcase(method)}` `#{path}`
 
       #{definition["description"]}
       """
-      @spec unquote(fn_name)(client :: Tesla.Client.t(), config :: unquote(config_type)) ::
-              {:ok, unquote(response_type)}
-              | {:error, {:unexpected_response, Tesla.Env.t()} | any}
+      @spec unquote(fn_name)(client :: Tesla.Client.t(), config :: unquote(config_type_name)()) ::
+              unquote(response_type_name)()
+      # credo:disable-for-next-line Credo.Check.Readability.Specs
       def unquote(fn_name)(client \\ %Tesla.Client{}, config) do
-        client
-        |> unquote(base_module).request(
-          method: unquote(String.to_atom(method)),
-          url: UriTemplate.from_string(unquote(path)),
-          query: Map.get(config, :query, []),
-          headers: Map.get(config, :headers, []),
-          body: Map.get(config, :body, nil),
-          opts:
-            [
-              path_parameters: Map.get(config, :path, %{}),
-              server_parameters: Map.get(config, :server, %{})
-            ] ++ Map.get(config, :opts, [])
+        unquote(caller).request(
+          client,
+          config,
+          unquote(base_module),
+          unquote(method),
+          unquote(path),
+          Function.capture(__MODULE__, :"#{unquote(fn_name)}_response", 1)
         )
-        |> unquote(:"#{fn_name}_response")()
       end
 
+      @doc false
       for {code, response_definition} <- definition["responses"] do
         case {code, Integer.parse(code)} do
           {"default", _} ->
-            defp unquote(:"#{fn_name}_response")(
-                   {:ok, %Tesla.Env{status: code, body: body} = env}
-                 )
-                 when not is_nil(code) do
+            # credo:disable-for-next-line Credo.Check.Readability.Specs
+            def unquote(:"#{fn_name}_response")({:ok, %Tesla.Env{status: nil, body: body} = env}) do
+              {:error, {:unexpected_response, env}}
+            end
+
+            # credo:disable-for-next-line Credo.Check.Readability.Specs
+            def unquote(:"#{fn_name}_response")({:ok, %Tesla.Env{status: code, body: body} = env}) do
               {:ok, {code, body, env}}
             end
 
           {_, {code, ""}} ->
-            defp unquote(:"#{fn_name}_response")(
-                   {:ok, %Tesla.Env{status: unquote(code), body: body} = env}
-                 ) do
+            # credo:disable-for-next-line Credo.Check.Readability.Specs
+            def unquote(:"#{fn_name}_response")(
+                  {:ok, %Tesla.Env{status: unquote(code), body: body} = env}
+                ) do
               {:ok, {unquote(code), body, env}}
             end
         end
       end
 
-      defp unquote(:"#{fn_name}_response")({:ok, env}) do
+      # credo:disable-for-next-line Credo.Check.Readability.Specs
+      def unquote(:"#{fn_name}_response")({:ok, env}) do
         {:error, {:unexpected_response, env}}
       end
 
-      defp unquote(:"#{fn_name}_response")({:error, reason}) do
+      # credo:disable-for-next-line Credo.Check.Readability.Specs
+      def unquote(:"#{fn_name}_response")({:error, reason}) do
         {:error, reason}
       end
     end
@@ -153,6 +160,8 @@ defmodule OpenAPICompiler.Path do
         module = Module.concat(base_module, Macro.camelize(tag))
 
         defmodule module do
+          @moduledoc OpenAPICompiler.Description.description(unquote(context))
+
           for {_tag, path, method, operation_id} <- endpoints do
             alias_path(method <> "_" <> path, method, path, unquote(context))
 
@@ -165,6 +174,7 @@ defmodule OpenAPICompiler.Path do
     end
   end
 
+  @spec normalize_name(name :: String.t()) :: atom
   def normalize_name(name) do
     name
     |> String.replace(~R/[^\w]/, "_", global: true)
@@ -172,5 +182,31 @@ defmodule OpenAPICompiler.Path do
     |> String.replace(~R/_+/, "_", global: true)
     |> String.trim("_")
     |> String.to_atom()
+  end
+
+  @spec request(
+          client :: Tesla.Client.t(),
+          config :: map(),
+          base_module :: atom(),
+          method :: String.t(),
+          path :: String.t(),
+          callback :: (Tesla.Env.result() -> result)
+        ) :: result
+        when result: any
+  def request(client, config, base_module, method, path, callback) do
+    client
+    |> base_module.request(
+      method: String.to_atom(method),
+      url: UriTemplate.from_string(path),
+      query: Map.get(config, :query, []),
+      headers: Map.get(config, :headers, []),
+      body: Map.get(config, :body, nil),
+      opts:
+        [
+          path_parameters: Map.get(config, :path, %{}),
+          server_parameters: Map.get(config, :server, %{})
+        ] ++ Map.get(config, :opts, [])
+    )
+    |> callback.()
   end
 end

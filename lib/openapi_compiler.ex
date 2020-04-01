@@ -27,14 +27,14 @@ defmodule OpenAPICompiler do
       end
   """
   defmacro __using__(opts) do
-    quote location: :keep, bind_quoted: [opts: opts, compiler: __MODULE__] do
+    quote location: :keep, bind_quoted: [opts: opts] do
       %OpenAPICompiler.Context{
         schema: schema,
         external_resources: external_resources,
         server: server
       } = context = OpenAPICompiler.Context.create(opts, __MODULE__)
 
-      @moduledoc compiler.description(context)
+      @moduledoc OpenAPICompiler.Description.description(context)
 
       @schema schema
       @context context
@@ -55,9 +55,9 @@ defmodule OpenAPICompiler do
       plug(Tesla.Middleware.Logger)
       plug(Tesla.Middleware.Opts, context: @context)
 
-      require OpenAPICompiler.Typespec
+      require OpenAPICompiler.Typespec.Server
 
-      OpenAPICompiler.Typespec.server_typespec(context)
+      OpenAPICompiler.Typespec.Server.typespec(context)
 
       require OpenAPICompiler.Component.Schema
 
@@ -73,48 +73,55 @@ defmodule OpenAPICompiler do
     end
   end
 
-  @doc false
-  def description(%{schema: schema}) do
-    info =
-      schema
-      |> Enum.map(& &1["info"])
-      |> Enum.reduce(%{}, &Map.merge/2)
+  defmodule UnknownTypeError do
+    defexception [:message, :definition, :type, :context]
 
-    """
-    #{info["title"]} - #{info["version"]}
-    """
-    |> add_description_text(not is_nil(info["description"]), fn -> info["description"] end)
-    |> add_description_text(not is_nil(info["termsOfService"]), fn ->
-      "Terms of Service: " <> info["termsOfService"]
-    end)
-    |> add_description_text(not is_nil(info["license"]), fn ->
-      "License: " <>
-        if is_nil(info["license"]["url"]) do
-          info["license"]["name"]
-        else
-          "[#{info["license"]["name"]}](#{info["license"]["url"]})"
-        end
-    end)
-    |> add_description_text(not is_nil(info["contact"]), fn ->
-      [
-        info["contact"]["name"],
-        unless is_nil(info["contact"]["email"]) do
-          "[#{info["contact"]["email"]}](mailto:#{info["contact"]["email"]})"
-        end,
-        info["contact"]["url"]
-      ]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.join(" - ")
-    end)
+    @impl Exception
+    def exception(opts) do
+      type = Keyword.fetch!(opts, :type)
+      context = Keyword.fetch!(opts, :context)
+      definition = Keyword.fetch!(opts, :definition)
+
+      %__MODULE__{
+        message: "Unknown Type #{type}",
+        type: type,
+        context: context,
+        definition: definition
+      }
+    end
   end
 
-  defp add_description_text(acc, false, _), do: acc
+  defmodule InvalidOptsError do
+    defexception [:message]
+  end
 
-  defp add_description_text(acc, true, callback) do
-    """
-    #{acc}
+  defmodule RefNotFoundError do
+    defexception [:message, :ref, :schema]
 
-    #{callback.()}
-    """
+    @impl Exception
+    def exception(opts) do
+      ref = Keyword.fetch!(opts, :ref)
+      schema = Keyword.fetch!(opts, :schema)
+
+      %__MODULE__{
+        message: "Ref #{ref} not found",
+        ref: ref,
+        schema: schema
+      }
+    end
+  end
+
+  defmodule CircularRefError do
+    defexception [:message, :schema]
+
+    @impl Exception
+    def exception(opts) do
+      schema = Keyword.fetch!(opts, :schema)
+
+      %__MODULE__{
+        message: "Circular refs are only supported for schema components",
+        schema: schema
+      }
+    end
   end
 end

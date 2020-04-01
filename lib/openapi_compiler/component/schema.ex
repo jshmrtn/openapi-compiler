@@ -7,11 +7,11 @@ defmodule OpenAPICompiler.Component.Schema do
       %OpenAPICompiler.Context{schema: schema} = %{^module_key => module} = context
 
       defmodule module do
-        require OpenAPICompiler.Typespec
+        require OpenAPICompiler.Typespec.Schema
 
         for root <- schema,
             {name, value} <- root["components"]["schemas"] || [] do
-          OpenAPICompiler.Typespec.type(name, value, mode, context)
+          OpenAPICompiler.Typespec.Schema.typespec(name, value, mode, context)
         end
 
         case @type do

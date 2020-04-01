@@ -4,7 +4,7 @@ defmodule OpenAPICompiler.Middleware.PathParams do
   @behaviour Tesla.Middleware
 
   @impl Tesla.Middleware
-  def call(%Tesla.Env{opts: opts} = env, next, _options) do
+  def call(%Tesla.Env{opts: opts} = env, next, _) do
     env
     |> Map.update!(:url, fn
       %UriTemplate{} = path_template ->

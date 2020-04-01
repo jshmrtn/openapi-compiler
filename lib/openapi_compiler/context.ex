@@ -1,6 +1,15 @@
 defmodule OpenAPICompiler.Context do
   @moduledoc false
 
+  @type t :: %__MODULE__{
+          schema: [map],
+          base_module: atom,
+          components_schema_read_module: atom,
+          components_schema_write_module: atom,
+          external_resources: [Path.t()],
+          server: map
+        }
+
   @enforce_keys [
     :schema,
     :base_module,
@@ -19,12 +28,7 @@ defmodule OpenAPICompiler.Context do
     external_resources: []
   ]
 
-  defimpl Inspect do
-    def inspect(%OpenAPICompiler.Context{base_module: module}, _opts) do
-      "#OpenAPICompiler.Context<#{module}>"
-    end
-  end
-
+  @spec create(opts :: Enum.t(), module :: atom) :: t
   def create(opts, module) do
     struct!(
       __MODULE__,
@@ -37,7 +41,7 @@ defmodule OpenAPICompiler.Context do
           %{opts | schema: lookup_refs(schema)}
 
         _ ->
-          raise "Schema not provided"
+          raise OpenAPICompiler.InvalidOptsError, message: "Schema not provided"
       end
       |> lookup_server
       |> Map.put_new(:base_module, module)
@@ -76,6 +80,16 @@ defmodule OpenAPICompiler.Context do
 
   defp normalize_config_yml(other), do: other
 
+  defp normalize_config_json(%{json: json} = opts) do
+    opts
+    |> Map.drop([:json])
+    |> Map.put_new_lazy(:schema, fn ->
+      Application.ensure_all_started(:jason)
+
+      [Jason.decode!(json)]
+    end)
+  end
+
   defp normalize_config_json(%{json_path: json_path} = opts) do
     opts
     |> Map.drop([:json_path])
@@ -100,13 +114,13 @@ defmodule OpenAPICompiler.Context do
   defp to_map([]), do: %{}
 
   defp to_map([_ | _] = structure),
-    do: structure |> Enum.map(&to_map/1)
+    do: Enum.map(structure, &to_map/1)
 
   defp to_map(other), do: other
 
-  defp lookup_refs(schema), do: lookup_refs(schema, schema, 10)
+  defp lookup_refs(schema), do: lookup_refs(schema, schema, 1000)
 
-  defp lookup_refs(type, _, 0), do: type
+  defp lookup_refs(_, roots, 0), do: raise(OpenAPICompiler.CircularRefError, schema: roots)
 
   defp lookup_refs(%{"$ref" => path}, roots, depth) do
     "#/" <> local_path = path
@@ -116,7 +130,7 @@ defmodule OpenAPICompiler.Context do
     roots
     |> Enum.find_value(&get_in(&1, parts))
     |> case do
-      nil -> raise "not found"
+      nil -> raise OpenAPICompiler.RefNotFoundError, ref: path, schema: roots
       found -> Map.put(found, :__ref__, parts)
     end
     |> lookup_refs(roots, depth - 1)
@@ -144,7 +158,8 @@ defmodule OpenAPICompiler.Context do
 
     case {servers, opts[:server]} do
       {[], nil} ->
-        raise "No server was defined"
+        raise OpenAPICompiler.InvalidOptsError,
+          message: "No server was defined"
 
       {_, %{}} ->
         opts
@@ -154,15 +169,27 @@ defmodule OpenAPICompiler.Context do
 
       {servers, server_index}
       when is_integer(server_index) and server_index >= 0 and server_index < length(servers) ->
-        Map.put(opts, :server, servers[server_index])
+        Map.put(opts, :server, Enum.at(servers, server_index))
 
       {servers, server_selector} when is_binary(server_selector) ->
         servers
         |> Enum.filter(&(&1["description"] == server_selector or &1["url"] == server_selector))
         |> case do
-          [] -> raise "Server #{server_selector} not found"
-          [server | _] -> Map.put(opts, :server, server)
+          [] ->
+            raise OpenAPICompiler.InvalidOptsError,
+              message: "Server #{server_selector} not found"
+
+          [server | _] ->
+            Map.put(opts, :server, server)
         end
+    end
+  end
+
+  defimpl Inspect do
+    @spec inspect(input :: OpenAPICompiler.Context.t(), opts :: Inspect.Opts.t()) ::
+            Inspect.Algebra.t()
+    def inspect(%OpenAPICompiler.Context{base_module: module}, _) do
+      "#OpenAPICompiler.Context<#{module}>"
     end
   end
 end
