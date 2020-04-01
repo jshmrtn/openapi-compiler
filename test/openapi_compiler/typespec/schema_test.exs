@@ -404,6 +404,31 @@ defmodule OpenAPICompiler.Typespec.SchemaTest do
     end
   end
 
+  describe "anyOf" do
+    test "generates valid output" do
+      assert_value %{
+                     "anyOf" => [
+                       %{
+                         "type" => "object",
+                         "required" => ["firstName"],
+                         "properties" => %{"firstName" => %{"type" => "string"}}
+                       },
+                       %{
+                         "type" => "object",
+                         "required" => ["lastName"],
+                         "properties" => %{"lastName" => %{"type" => "string"}}
+                       }
+                     ]
+                   }
+                   |> type(:read, @context, Read)
+                   |> type_def_ast
+                   |> Macro.to_string()
+                   |> Code.format_string!()
+                   |> IO.iodata_to_binary() ==
+                     "@type :type :: %{optional(:firstName) => String.t(), optional(:lastName) => String.t()}"
+    end
+  end
+
   describe "type/4/fallback to object" do
     test "default" do
       assert_value %{}

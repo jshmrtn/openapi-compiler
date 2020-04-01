@@ -173,14 +173,16 @@ defmodule OpenAPICompiler.Typespec.Schema do
 
   def type(%{"allOf" => requirements}, mode, context, caller) do
     requirements
-    |> Enum.reduce(%{}, fn value, acc ->
-      Map.merge(acc, value, fn
-        _, %{} = old_value, %{} = new_value -> Map.merge(old_value, new_value)
-        _, [_ | _] = old_value, [_ | _] = new_value -> old_value ++ new_value
-        _, _, new_value -> new_value
-      end)
-    end)
+    |> merge_definitions
     |> Map.drop([:__ref__])
+    |> type(mode, context, caller)
+  end
+
+  def type(%{"anyOf" => options}, mode, context, caller) do
+    options
+    |> merge_definitions
+    |> Map.drop([:__ref__])
+    |> Map.drop(["required"])
     |> type(mode, context, caller)
   end
 
@@ -192,6 +194,16 @@ defmodule OpenAPICompiler.Typespec.Schema do
     type
     |> Map.put("type", "object")
     |> type(mode, context, caller)
+  end
+
+  defp merge_definitions(definitions) do
+    Enum.reduce(definitions, %{}, fn value, acc ->
+      Map.merge(acc, value, fn
+        _, %{} = old_value, %{} = new_value -> Map.merge(old_value, new_value)
+        _, [_ | _] = old_value, [_ | _] = new_value -> old_value ++ new_value
+        _, _, new_value -> new_value
+      end)
+    end)
   end
 
   defp property(name, definition, mode, required, context, caller)
