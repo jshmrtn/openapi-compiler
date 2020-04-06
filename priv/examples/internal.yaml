@@ -15,6 +15,7 @@ servers:
 paths:
   /:
     get:
+      tags: ["foo", "foo-bar"]
       operationId: list
       responses:
         '200':

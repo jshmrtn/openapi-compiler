@@ -245,7 +245,13 @@ defmodule OpenAPICompiler.Path do
       end)
       |> Enum.group_by(&elem(&1, 0))
       |> Enum.map(fn {tag, endpoints} ->
-        module = Module.concat(base_module, Macro.camelize(tag))
+        {tag
+         |> String.replace(~R/[^\w\d_]+/, "_", global: true)
+         |> String.replace("__", "_", global: true)
+         |> Macro.camelize(), endpoints}
+      end)
+      |> Enum.map(fn {tag, endpoints} ->
+        module = Module.concat(base_module, tag)
 
         defmodule module do
           @moduledoc OpenAPICompiler.Description.description(unquote(context))
