@@ -43,7 +43,7 @@ defmodule OpenAPICompiler.Typespec.Schema do
     case caller do
       ^module ->
         quote location: :keep do
-          unquote(type_name(name))
+          unquote(type_name(name))()
         end
 
       _ ->
@@ -64,7 +64,7 @@ defmodule OpenAPICompiler.Typespec.Schema do
     case caller do
       ^module ->
         quote location: :keep do
-          unquote(type_name(name))
+          unquote(type_name(name))()
         end
 
       _ ->

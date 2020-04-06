@@ -86,7 +86,7 @@ defmodule OpenAPICompiler.Typespec.SchemaTest do
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
-                   |> IO.iodata_to_binary() == "@type :type :: :foo"
+                   |> IO.iodata_to_binary() == "@type :type :: foo()"
     end
 
     test "remote read" do
@@ -113,7 +113,7 @@ defmodule OpenAPICompiler.Typespec.SchemaTest do
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
-                   |> IO.iodata_to_binary() == "@type :type :: :foo"
+                   |> IO.iodata_to_binary() == "@type :type :: foo()"
     end
 
     test "not schema" do
