@@ -154,8 +154,8 @@ defmodule OpenAPICompiler.Path do
 
       @doc false
       for {code, response_definition} <- definition["responses"] do
-        case {code, Integer.parse(code)} do
-          {"default", _} ->
+        case code do
+          "default" ->
             # credo:disable-for-next-line Credo.Check.Readability.Specs
             def unquote(:"#{fn_name}_response")({:ok, %Tesla.Env{status: nil, body: body} = env}) do
               {:error, {:unexpected_response, env}}
@@ -166,7 +166,17 @@ defmodule OpenAPICompiler.Path do
               {:ok, {code, body, env}}
             end
 
-          {_, {code, ""}} ->
+          code when is_binary(code) ->
+            code = String.to_integer(code)
+
+            # credo:disable-for-next-line Credo.Check.Readability.Specs
+            def unquote(:"#{fn_name}_response")(
+                  {:ok, %Tesla.Env{status: unquote(code), body: body} = env}
+                ) do
+              {:ok, {unquote(code), body, env}}
+            end
+
+          code when is_integer(code) ->
             # credo:disable-for-next-line Credo.Check.Readability.Specs
             def unquote(:"#{fn_name}_response")(
                   {:ok, %Tesla.Env{status: unquote(code), body: body} = env}

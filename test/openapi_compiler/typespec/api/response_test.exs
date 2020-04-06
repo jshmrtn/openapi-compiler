@@ -118,7 +118,7 @@ defmodule OpenAPICompiler.Typespec.Api.ResponseTest do
                            }
                          }
                        },
-                       "400" => %{
+                       400 => %{
                          "description" => "test",
                          "content" => %{
                            "application/json" => %{
@@ -148,9 +148,9 @@ defmodule OpenAPICompiler.Typespec.Api.ResponseTest do
                      """
                      @type :type ::
                              {Tesla.Env.status(), boolean()}
-                             | {400, float() | integer()}
                              | {200, integer()}
-                             | {200, String.t()}<NOEOL>
+                             | {200, String.t()}
+                             | {400, float() | integer()}<NOEOL>
                      """
     end
 

@@ -59,9 +59,14 @@ defmodule OpenAPICompiler.Typespec.Api.Response do
           {Tesla.Env.status(), unquote(typespec)}
         end
 
-      {code, typespec} ->
+      {code, typespec} when is_binary(code) ->
         code = String.to_integer(code)
 
+        quote location: :keep do
+          {unquote(code), unquote(typespec)}
+        end
+
+      {code, typespec} when is_integer(code) ->
         quote location: :keep do
           {unquote(code), unquote(typespec)}
         end
