@@ -68,8 +68,8 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
 
       assert_value iex_t(module_name.foo()) == """
                    @type foo() :: %{
-                           optional(:query) => %{optional(String.t()) => any()},
-                           optional(:headers) => %{optional(String.t()) => any()},
+                           optional(:query) => foo_query(),
+                           optional(:headers) => foo_header(),
                            optional(:opts) => Tesla.Env.opts()
                          }
 
@@ -77,22 +77,22 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
     end
   end
 
-  describe "type/3" do
+  describe "type/4" do
     test "query optional" do
       assert_value %{
                      "parameters" => [
                        %{"in" => "query", "name" => "test", "schema" => %{"type" => "string"}}
                      ]
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(:test) => String.t(), optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -109,15 +109,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        }
                      ]
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             :query => %{:test => String.t(), optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             :query => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -125,15 +125,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
 
     test "query missing" do
       assert_value %{}
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -145,15 +145,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        %{"in" => "header", "name" => "X-Test", "schema" => %{"type" => "string"}}
                      ]
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(:\"X-Test\") => String.t(), optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -170,15 +170,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        }
                      ]
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             :headers => %{:\"X-Test\" => String.t(), optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             :headers => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -186,15 +186,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
 
     test "header missing" do
       assert_value %{}
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -206,16 +206,16 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        %{"in" => "path", "name" => "X-Test", "schema" => %{"type" => "string"}}
                      ]
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:path) => %{optional(:\"X-Test\") => String.t()},
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:path) => test_path(),
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -232,16 +232,16 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        }
                      ]
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             :path => %{\"X-Test\": String.t()},
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             :path => test_path(),
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -249,15 +249,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
 
     test "path missing" do
       assert_value %{}
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -275,16 +275,16 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        }
                      }
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:body) => String.t(),
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:body) => test_request_body(),
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -307,16 +307,16 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        }
                      }
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:body) => integer() | String.t(),
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:body) => test_request_body(),
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -335,16 +335,16 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                        }
                      }
                    }
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             :body => String.t(),
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             :body => test_request_body(),
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -352,15 +352,15 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
 
     test "requestBody missing" do
       assert_value %{}
-                   |> type(@context, __MODULE__)
+                   |> type(:test, @context, __MODULE__)
                    |> type_def_ast
                    |> Macro.to_string()
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -369,6 +369,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
     test "server has variables" do
       assert_value %{}
                    |> type(
+                     :test,
                      %OpenAPICompiler.Context{@context | server: @server_complex},
                      __MODULE__
                    )
@@ -379,8 +380,8 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                      """
                      @type :type :: %{
                              optional(:server) => Api.server_parameters(),
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """
@@ -389,6 +390,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
     test "server has no variables" do
       assert_value %{}
                    |> type(
+                     :test,
                      %OpenAPICompiler.Context{@context | server: @server_simple},
                      __MODULE__
                    )
@@ -398,8 +400,8 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
-                             optional(:query) => %{optional(String.t()) => any()},
-                             optional(:headers) => %{optional(String.t()) => any()},
+                             optional(:query) => test_query(),
+                             optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
                            }<NOEOL>
                      """

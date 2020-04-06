@@ -5,14 +5,12 @@ defmodule OpenAPICompiler.Path do
     quote location: :keep do
       %OpenAPICompiler.Context{schema: schema} = unquote(context)
 
-      require OpenAPICompiler.Typespec.Api.Response
-
-      OpenAPICompiler.Typespec.Api.Response.base_typespecs()
-
       import unquote(__MODULE__)
 
       for root <- schema,
-          {path, methods} <- root["paths"] || [],
+          not is_nil(root["paths"]),
+          {path, methods} <- root["paths"],
+          not is_nil(methods),
           {method, definition} <- methods do
         path_definition(path, method, definition, unquote(context))
 
@@ -20,6 +18,88 @@ defmodule OpenAPICompiler.Path do
           alias_path(definition["operationId"], method, path, unquote(context))
         end
       end
+    end
+  end
+
+  defmacro define_callbacks(context) do
+    quote location: :keep do
+      %OpenAPICompiler.Context{schema: schema} = unquote(context)
+
+      import unquote(__MODULE__)
+
+      for root <- schema,
+          not is_nil(root["paths"]),
+          {api_path, api_methods} <- root["paths"],
+          not is_nil(api_methods),
+          {api_method, api_definition} <- api_methods,
+          not is_nil(api_definition["callbacks"]),
+          {callback_name, callback_paths} <- api_definition["callbacks"],
+          not is_nil(callback_paths),
+          {callback_path, callback_methods} <- callback_paths,
+          not is_nil(callback_methods),
+          {callback_method, callback_definition} <- callback_methods do
+        callback_definition(
+          api_path,
+          api_method,
+          callback_name,
+          callback_path,
+          callback_method,
+          callback_definition,
+          unquote(context)
+        )
+      end
+    end
+  end
+
+  defmacro callback_definition(
+             api_path,
+             api_method,
+             callback_name,
+             callback_path,
+             callback_method,
+             callback_definition,
+             context
+           ) do
+    quote location: :keep,
+          bind_quoted: [
+            api_path: api_path,
+            api_method: api_method,
+            callback_name: callback_name,
+            callback_path: callback_path,
+            callback_method: callback_method,
+            callback_definition: callback_definition,
+            caller: __MODULE__,
+            context: context
+          ] do
+      callback_name =
+        caller.normalize_name(
+          Enum.join(
+            [
+              api_method,
+              case api_path do
+                url when url in ["", "/"] -> "root"
+                url -> url
+              end,
+              callback_name,
+              # callback_path,
+              callback_method
+            ],
+            "_"
+          )
+        )
+
+      require OpenAPICompiler.Typespec.Api.Response
+      response_type_name = :"#{callback_name}_response"
+
+      OpenAPICompiler.Typespec.Api.Response.typespec(
+        response_type_name,
+        callback_definition,
+        context
+      )
+
+      require OpenAPICompiler.Typespec.Api.Config
+      config_type_name = :"#{callback_name}_config"
+      OpenAPICompiler.Typespec.Api.Config.typespec(config_type_name, callback_definition, context)
     end
   end
 
@@ -34,8 +114,6 @@ defmodule OpenAPICompiler.Path do
             context: context
           ] do
       %OpenAPICompiler.Context{base_module: base_module} = context
-
-      config_type = OpenAPICompiler.Typespec.Api.Config.type(definition, context, __MODULE__)
 
       fn_name =
         caller.normalize_name(

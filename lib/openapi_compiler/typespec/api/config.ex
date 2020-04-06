@@ -9,30 +9,73 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
   defmacro typespec(name, definition, context) do
     quote location: :keep,
           bind_quoted: [name: name, definition: definition, context: context, caller: __MODULE__] do
-      type = caller.type(definition, context, __MODULE__)
+      type = caller.type(definition, name, context, __MODULE__)
+
+      query_name = :"#{name}_query"
+
+      @type unquote(query_name)() ::
+              unquote(caller.parameters_type(definition, "query", context, true, __MODULE__))
+
+      header_name = :"#{name}_header"
+
+      @type unquote(header_name)() ::
+              unquote(caller.parameters_type(definition, "header", context, true, __MODULE__))
+
+      if caller.has_parameter?(definition, "path") do
+        path_name = :"#{name}_path"
+
+        @type unquote(path_name)() ::
+                unquote(caller.parameters_type(definition, "path", context, true, __MODULE__))
+      end
+
+      case definition["requestBody"] do
+        nil ->
+          nil
+
+        %{} = request_body_definition ->
+          request_body_name = :"#{name}_request_body"
+
+          @type unquote(request_body_name)() ::
+                  unquote(caller.request_body_type(request_body_definition, context, __MODULE__))
+      end
 
       @type unquote(name)() :: unquote(type)
     end
   end
 
-  @spec type(definition :: map, context :: OpenAPICompiler.Context.t(), caller :: atom) ::
+  @spec type(
+          definition :: map,
+          name :: atom,
+          context :: OpenAPICompiler.Context.t(),
+          caller :: atom
+        ) ::
           Macro.t()
   def type(
         definition,
+        name,
         %OpenAPICompiler.Context{server: global_server} = context,
         caller
       ) do
+    query_name = :"#{name}_query"
+    header_name = :"#{name}_header"
+    path_name = :"#{name}_path"
+    request_body_name = :"#{name}_request_body"
+
     {:%{}, [],
      [
        optional_ast(
          has_no_required_parameter?(definition, "query"),
          :query,
-         parameters_type(definition, "query", context, true, caller)
+         quote location: :keep do
+           unquote(query_name)()
+         end
        ),
        optional_ast(
          has_no_required_parameter?(definition, "header"),
          :headers,
-         parameters_type(definition, "header", context, true, caller)
+         quote location: :keep do
+           unquote(header_name)()
+         end
        ),
        optional_ast(
          true,
@@ -42,38 +85,41 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
          end
        )
      ]
-     |> add_path(definition, context, caller)
-     |> add_request_body(definition, context, caller)
+     |> add_path(path_name, definition)
+     |> add_request_body(request_body_name, definition)
      |> add_server(definition["server"] || global_server, context, caller)}
   end
 
-  defp add_request_body(config, definition, context, caller)
+  defp add_request_body(config, name, definition)
 
   defp add_request_body(
          config,
-         %{"requestBody" => %{} = request_body_definition},
-         context,
-         caller
+         name,
+         %{"requestBody" => %{} = request_body_definition}
        ) do
     [
       optional_ast(
         request_body_definition["required"] != true,
         :body,
-        request_body_type(request_body_definition, context, caller)
+        quote location: :keep do
+          unquote(name)()
+        end
       )
       | config
     ]
   end
 
-  defp add_request_body(config, _, _, _), do: config
+  defp add_request_body(config, _, _), do: config
 
-  defp add_path(config, definition, context, caller) do
+  defp add_path(config, name, definition) do
     if has_parameter?(definition, "path") do
       [
         optional_ast(
           has_no_required_parameter?(definition, "path"),
           :path,
-          parameters_type(definition, "path", context, false, caller)
+          quote location: :keep do
+            unquote(name)()
+          end
         )
         | config
       ]
@@ -123,9 +169,10 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     raise "Only one global server is supported"
   end
 
-  defp request_body_type(request_body_definition, context, caller)
+  @spec request_body_type(map, OpenAPICompiler.Context.t(), atom) :: Macro.t()
+  def request_body_type(request_body_definition, context, caller)
 
-  defp request_body_type(%{"content" => %{} = content}, context, caller) do
+  def request_body_type(%{"content" => %{} = content}, context, caller) do
     content
     |> Enum.map(fn {_media_type, media_type} ->
       media_type["schema"]
@@ -160,7 +207,7 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     )
   end
 
-  defp request_body_type(_, _, _) do
+  def request_body_type(_, _, _) do
     quote location: :keep do
       any()
     end
@@ -173,7 +220,8 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     |> Enum.all?(&(&1["required"] != true))
   end
 
-  defp has_parameter?(definition, type) do
+  @spec has_parameter?(map, String.t()) :: boolean()
+  def has_parameter?(definition, type) do
     definition
     |> Map.get("parameters", [])
     |> Enum.filter(&(&1["in"] == type))
@@ -183,7 +231,9 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     end
   end
 
-  defp parameters_type(definition, type, context, allow_more, caller) do
+  @spec parameters_type(map, String.t(), OpenAPICompiler.Context.t(), boolean(), atom) ::
+          Macro.t()
+  def parameters_type(definition, type, context, allow_more, caller) do
     parameters =
       definition
       |> Map.get("parameters", [])

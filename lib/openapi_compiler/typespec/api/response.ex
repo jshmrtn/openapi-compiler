@@ -14,8 +14,10 @@ defmodule OpenAPICompiler.Typespec.Api.Response do
     quote location: :keep,
           bind_quoted: [name: name, definition: definition, context: context, caller: __MODULE__] do
       type = caller.type(definition, context, __MODULE__)
+      options_name = :"#{name}_options"
 
-      @type unquote(name)() :: response(unquote(type))
+      @type unquote(options_name)() :: unquote(type)
+      @type unquote(name)() :: response(unquote(options_name))
     end
   end
 

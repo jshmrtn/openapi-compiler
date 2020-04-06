@@ -66,10 +66,15 @@ defmodule OpenAPICompiler do
       # credo:disable-for-next-line Credo.Check.Design.AliasUsage
       OpenAPICompiler.Component.Schema.define_module(context, :write)
 
+      require OpenAPICompiler.Typespec.Api.Response
+
+      OpenAPICompiler.Typespec.Api.Response.base_typespecs()
+
       require OpenAPICompiler.Path
 
       OpenAPICompiler.Path.define_base_paths(context)
       OpenAPICompiler.Path.define_alias_modules(context)
+      OpenAPICompiler.Path.define_callbacks(context)
     end
   end
 
