@@ -3,7 +3,7 @@ defmodule OpenAPICompiler.MixProject do
 
   use Mix.Project
 
-  @version "1.0.0-beta.5"
+  @version "1.0.0-beta.6"
 
   def project do
     [
