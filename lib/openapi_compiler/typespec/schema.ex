@@ -162,6 +162,40 @@ defmodule OpenAPICompiler.Typespec.Schema do
     end
   end
 
+  def type(
+        %{
+          "oneOf" => options,
+          "discriminator" => %{"propertyName" => discriminator_property_name} = discriminator
+        },
+        mode,
+        context,
+        caller
+      ) do
+    options
+    |> Enum.map(fn option ->
+      %{
+        "allOf" => [
+          option,
+          %{
+            "type" => "object",
+            "properties" => %{
+              discriminator_property_name => %{
+                "type" => "string",
+                "enum" => [discriminator_name(option, discriminator)]
+              }
+            },
+            "required" => [discriminator_property_name]
+          }
+        ]
+      }
+    end)
+    |> Enum.map(&type(&1, mode, context, caller))
+    |> Enum.reduce(nil, fn
+      value, nil -> value
+      value, acc -> {:|, [], [value, acc]}
+    end)
+  end
+
   def type(%{"oneOf" => options}, mode, context, caller) do
     options
     |> Enum.map(&type(&1, mode, context, caller))
@@ -222,5 +256,27 @@ defmodule OpenAPICompiler.Typespec.Schema do
 
   defp property(name, definition, mode, false, context, caller) do
     {{:optional, [], [String.to_atom(name)]}, type(definition, mode, context, caller)}
+  end
+
+  defp discriminator_name(option_definition, discriminator)
+
+  defp discriminator_name(%{__ref__: ["components", "schemas", name] = search_path}, %{
+         "mapping" => mapping
+       }) do
+    {name, _} =
+      mapping
+      |> Enum.map(fn {name, "#/" <> ref} ->
+        {name, String.split(ref, "/")}
+      end)
+      |> Enum.find({name, search_path}, fn
+        {_, path} when search_path == path -> true
+        {_, _} -> false
+      end)
+
+    name
+  end
+
+  defp discriminator_name(%{__ref__: ["components", "schemas", name]}, _) do
+    name
   end
 end
