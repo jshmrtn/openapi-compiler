@@ -51,7 +51,7 @@ defmodule OpenAPICompiler do
 
       plug(OpenAPICompiler.Middleware.PathParams)
       plug(OpenAPICompiler.Middleware.Server, @server)
-      plug(Tesla.Middleware.JSON)
+      plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
       plug(Tesla.Middleware.Logger)
       plug(Tesla.Middleware.Opts, context: @context)
 
