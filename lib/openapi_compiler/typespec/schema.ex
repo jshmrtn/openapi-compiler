@@ -173,21 +173,19 @@ defmodule OpenAPICompiler.Typespec.Schema do
       ) do
     options
     |> Enum.map(fn option ->
-      %{
-        "allOf" => [
-          option,
-          %{
-            "type" => "object",
-            "properties" => %{
-              discriminator_property_name => %{
-                "type" => "string",
-                "enum" => [discriminator_name(option, discriminator)]
-              }
-            },
-            "required" => [discriminator_property_name]
-          }
-        ]
-      }
+      merge_definitions([
+        option,
+        %{
+          "type" => "object",
+          "properties" => %{
+            discriminator_property_name => %{
+              "type" => "string",
+              "enum" => [discriminator_name(option, discriminator)]
+            }
+          },
+          "required" => [discriminator_property_name]
+        }
+      ])
     end)
     |> Enum.map(&type(&1, mode, context, caller))
     |> Enum.reduce(nil, fn
@@ -208,14 +206,12 @@ defmodule OpenAPICompiler.Typespec.Schema do
   def type(%{"allOf" => requirements}, mode, context, caller) do
     requirements
     |> merge_definitions
-    |> Map.drop([:__ref__])
     |> type(mode, context, caller)
   end
 
   def type(%{"anyOf" => options}, mode, context, caller) do
     options
     |> merge_definitions
-    |> Map.drop([:__ref__])
     |> Map.drop(["required"])
     |> type(mode, context, caller)
   end
@@ -231,13 +227,20 @@ defmodule OpenAPICompiler.Typespec.Schema do
   end
 
   defp merge_definitions(definitions) do
-    Enum.reduce(definitions, %{}, fn value, acc ->
+    definitions
+    |> Enum.map(fn
+      %{"allOf" => options} -> merge_definitions(options)
+      %{"anyOf" => options} -> options |> merge_definitions() |> Map.drop(["required"])
+      other -> other
+    end)
+    |> Enum.reduce(%{}, fn value, acc ->
       Map.merge(acc, value, fn
         _, %{} = old_value, %{} = new_value -> Map.merge(old_value, new_value)
         _, [_ | _] = old_value, [_ | _] = new_value -> old_value ++ new_value
         _, _, new_value -> new_value
       end)
     end)
+    |> Map.drop([:__ref__])
   end
 
   defp property(name, definition, mode, required, context, caller)
