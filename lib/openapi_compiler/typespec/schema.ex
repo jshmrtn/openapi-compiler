@@ -133,8 +133,8 @@ defmodule OpenAPICompiler.Typespec.Schema do
      properties
      |> Enum.map(fn {property_name, property_definition} ->
        property(
-         property_name,
          property_definition,
+         property_name,
          mode,
          Enum.member?(required, property_name),
          context,
@@ -243,21 +243,27 @@ defmodule OpenAPICompiler.Typespec.Schema do
     |> Map.drop([:__ref__])
   end
 
-  defp property(name, definition, mode, required, context, caller)
+  defp property(definition, name, mode, required, context, caller)
 
-  defp property(_, %{"readOnly" => true}, :write, _, _, _) do
+  defp property(%{"allOf" => requirements}, name, mode, required, context, caller) do
+    requirements
+    |> merge_definitions()
+    |> property(name, mode, required, context, caller)
+  end
+
+  defp property(%{"readOnly" => true}, _, :write, _, _, _) do
     nil
   end
 
-  defp property(_, %{"writeOnly" => true}, :read, _, _, _) do
+  defp property(%{"writeOnly" => true}, _, :read, _, _, _) do
     nil
   end
 
-  defp property(name, definition, mode, true, context, caller) do
+  defp property(definition, name, mode, true, context, caller) do
     {String.to_atom(name), type(definition, mode, context, caller)}
   end
 
-  defp property(name, definition, mode, false, context, caller) do
+  defp property(definition, name, mode, false, context, caller) do
     {{:optional, [], [String.to_atom(name)]}, type(definition, mode, context, caller)}
   end
 
