@@ -17,7 +17,7 @@ defmodule OpenAPICompiler.Typespec.Api.Response do
       options_name = :"#{name}_options"
 
       @type unquote(options_name)() :: unquote(type)
-      @type unquote(name)() :: response(unquote(options_name))
+      @type unquote(name)() :: response(unquote(options_name)())
     end
   end
 
