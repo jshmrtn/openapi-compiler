@@ -56,19 +56,19 @@ defmodule OpenAPICompiler.Typespec.Api.Response do
     |> Enum.map(fn
       {"default", typespec} ->
         quote location: :keep do
-          {Tesla.Env.status(), unquote(typespec)}
+          {Tesla.Env.status(), unquote(typespec), Tesla.Env.t()}
         end
 
       {code, typespec} when is_binary(code) ->
         code = String.to_integer(code)
 
         quote location: :keep do
-          {unquote(code), unquote(typespec)}
+          {unquote(code), unquote(typespec), Tesla.Env.t()}
         end
 
       {code, typespec} when is_integer(code) ->
         quote location: :keep do
-          {unquote(code), unquote(typespec)}
+          {unquote(code), unquote(typespec), Tesla.Env.t()}
         end
     end)
     |> Enum.reduce(

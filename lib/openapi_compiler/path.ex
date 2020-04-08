@@ -293,7 +293,7 @@ defmodule OpenAPICompiler.Path do
       method: String.to_atom(method),
       url: UriTemplate.from_string(path),
       query: Map.get(config, :query, []),
-      headers: Map.get(config, :headers, []),
+      headers: config |> Map.get(:headers, []) |> Enum.to_list(),
       body: Map.get(config, :body, nil),
       opts:
         [
