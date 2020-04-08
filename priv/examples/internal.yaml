@@ -17,6 +17,10 @@ paths:
     get:
       tags: ["foo", "foo-bar"]
       operationId: list
+      parameters:
+        - in: header
+          name: X-Callback-Url
+          required: true
       responses:
         '200':
           description: 200 response

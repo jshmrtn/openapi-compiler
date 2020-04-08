@@ -244,7 +244,15 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
        optional_ast(
          parameter_definition["required"] != true,
          String.to_atom(parameter_definition["name"]),
-         Schema.type(parameter_definition["schema"], :write, context, caller)
+         case parameter_definition["schema"] do
+           nil ->
+             quote location: :keep do
+               any()
+             end
+
+           schema ->
+             Schema.type(schema, :write, context, caller)
+         end
        )
      end) ++
        if allow_more do

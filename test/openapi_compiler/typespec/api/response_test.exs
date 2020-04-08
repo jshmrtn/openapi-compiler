@@ -93,7 +93,7 @@ defmodule OpenAPICompiler.Typespec.Api.ResponseTest do
       )
 
       assert_value iex_t(module_name.foo()) == """
-                   @type foo() :: response(:foo_options)
+                   @type foo() :: response(foo_options())
 
                    """
     end
