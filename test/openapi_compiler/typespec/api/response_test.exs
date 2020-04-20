@@ -147,10 +147,10 @@ defmodule OpenAPICompiler.Typespec.Api.ResponseTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type ::
-                             {Tesla.Env.status(), boolean()}
-                             | {200, integer()}
-                             | {200, String.t()}
-                             | {400, float() | integer()}<NOEOL>
+                             {Tesla.Env.status(), boolean(), Tesla.Env.t()}
+                             | {200, integer(), Tesla.Env.t()}
+                             | {200, String.t(), Tesla.Env.t()}
+                             | {400, float() | integer(), Tesla.Env.t()}<NOEOL>
                      """
     end
 

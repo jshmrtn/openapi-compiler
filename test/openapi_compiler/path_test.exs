@@ -72,10 +72,10 @@ defmodule OpenAPICompiler.PathTest do
       assert_value iex_h(module_name.list()) ==
                      """
                      * def list(client \\\\ %Tesla.Client{}, config)
-
+      
                      delegate_to: OpenAPICompiler.PathTest.BasePaths.get_root/2
-
-
+      
+      
                      """
     end
   end

@@ -221,9 +221,11 @@ defmodule OpenAPICompiler.Path do
             end
         )
 
-      defdelegate unquote(operation_name)(client \\ %Tesla.Client{}, config),
-        to: module,
-        as: fn_name
+      unless operation_name == fn_name do
+        defdelegate unquote(operation_name)(client \\ %Tesla.Client{}, config),
+          to: module,
+          as: fn_name
+      end
     end
   end
 

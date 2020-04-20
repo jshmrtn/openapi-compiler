@@ -28,6 +28,21 @@ paths:
             application/json:
               schema: 
                 type: string
+  /test:
+    get:
+      tags: ["foo", "foo-bar"]
+      operationId: getTest
+      parameters:
+        - in: header
+          name: X-Callback-Url
+          required: true
+      responses:
+        '200':
+          description: 200 response
+          content:
+            application/json:
+              schema: 
+                type: string
   /{id}:
     post:
       requestBody:
