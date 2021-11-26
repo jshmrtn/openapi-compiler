@@ -243,7 +243,17 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
      Enum.map(parameters, fn parameter_definition ->
        optional_ast(
          parameter_definition["required"] != true,
-         String.to_atom(parameter_definition["name"]),
+         case type do
+           "header" ->
+             name_length_bytes = String.length(parameter_definition["name"]) * 8
+
+             quote do
+               <<_::unquote(name_length_bytes)>>
+             end
+
+           _other ->
+             String.to_atom(parameter_definition["name"])
+         end,
          case parameter_definition["schema"] do
            nil ->
              quote location: :keep do

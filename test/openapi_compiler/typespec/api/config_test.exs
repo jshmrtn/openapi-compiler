@@ -407,4 +407,44 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                      """
     end
   end
+
+  describe "parameters_type/5" do
+    test "query is a list" do
+      assert_value %{
+                     "parameters" => [
+                       %{
+                         "in" => "query",
+                         "name" => "foo",
+                         "required" => true,
+                         "schema" => %{"type" => "string"}
+                       }
+                     ]
+                   }
+                   |> parameters_type("query", @context, true, __MODULE__)
+                   |> type_def_ast
+                   |> Macro.to_string()
+                   |> Code.format_string!()
+                   |> IO.iodata_to_binary() ==
+                     "@type :type :: %{:foo => String.t(), optional(String.t()) => any()}"
+    end
+
+    test "headers is a list" do
+      assert_value %{
+                     "parameters" => [
+                       %{
+                         "in" => "header",
+                         "name" => "X-Test",
+                         "required" => true,
+                         "schema" => %{"type" => "string"}
+                       }
+                     ]
+                   }
+                   |> parameters_type("header", @context, true, __MODULE__)
+                   |> type_def_ast
+                   |> Macro.to_string()
+                   |> Code.format_string!()
+                   |> IO.iodata_to_binary() ==
+                     "@type :type :: %{<<_::48>> => String.t(), optional(String.t()) => any()}"
+    end
+  end
 end
