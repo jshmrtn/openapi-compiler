@@ -68,11 +68,12 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
 
       assert_value iex_t(module_name.foo()) == """
                    @type foo() :: %{
+                           optional(:body) => any(),
                            optional(:query) => foo_query(),
                            optional(:headers) => foo_header(),
                            optional(:opts) => Tesla.Env.opts()
                          }
-
+      
                    """
     end
   end
@@ -91,6 +92,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -116,6 +118,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              :query => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -132,6 +135,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -152,6 +156,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -177,6 +182,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              :headers => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -193,6 +199,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -213,6 +220,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:path) => test_path(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
@@ -239,6 +247,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              :path => test_path(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
@@ -256,6 +265,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -359,6 +369,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -380,6 +391,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                      """
                      @type :type :: %{
                              optional(:server) => Api.server_parameters(),
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()
@@ -400,6 +412,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                    |> IO.iodata_to_binary() ==
                      """
                      @type :type :: %{
+                             optional(:body) => any(),
                              optional(:query) => test_query(),
                              optional(:headers) => test_header(),
                              optional(:opts) => Tesla.Env.opts()

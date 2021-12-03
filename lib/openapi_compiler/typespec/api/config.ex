@@ -109,7 +109,17 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     ]
   end
 
-  defp add_request_body(config, _, _), do: config
+  defp add_request_body(config, _, _),
+    do: [
+      optional_ast(
+        true,
+        :body,
+        quote location: :keep do
+          any()
+        end
+      )
+      | config
+    ]
 
   defp add_path(config, name, definition) do
     if has_parameter?(definition, "path") do
