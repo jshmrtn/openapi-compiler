@@ -121,35 +121,6 @@ defmodule OpenAPICompiler.Typespec.Schema do
     end
   end
 
-  def type(
-        %{"type" => "object", "properties" => properties} = type,
-        mode,
-        context,
-        caller
-      ) do
-    required = Map.get(type, "required", [])
-
-    {:%{}, [],
-     properties
-     |> Enum.map(fn {property_name, property_definition} ->
-       property(
-         property_definition,
-         property_name,
-         mode,
-         Enum.member?(required, property_name),
-         context,
-         caller
-       )
-     end)
-     |> Enum.reject(&is_nil/1)}
-  end
-
-  def type(%{"type" => "object"}, _, _, _) do
-    quote location: :keep do
-      map()
-    end
-  end
-
   def type(%{"type" => "array", "items" => items}, mode, context, caller) do
     quote location: :keep do
       list(unquote(type(items, mode, context, caller)))
@@ -214,6 +185,35 @@ defmodule OpenAPICompiler.Typespec.Schema do
     |> merge_definitions
     |> Map.drop(["required"])
     |> type(mode, context, caller)
+  end
+
+  def type(
+        %{"type" => "object", "properties" => properties} = type,
+        mode,
+        context,
+        caller
+      ) do
+    required = Map.get(type, "required", [])
+
+    {:%{}, [],
+     properties
+     |> Enum.map(fn {property_name, property_definition} ->
+       property(
+         property_definition,
+         property_name,
+         mode,
+         Enum.member?(required, property_name),
+         context,
+         caller
+       )
+     end)
+     |> Enum.reject(&is_nil/1)}
+  end
+
+  def type(%{"type" => "object"}, _, _, _) do
+    quote location: :keep do
+      map()
+    end
   end
 
   def type(%{"type" => type} = definition, _, context, _) do
