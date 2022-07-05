@@ -58,24 +58,23 @@ defmodule OpenAPICompiler.PathTest do
 
       assert_value iex_h(module_name.get_root()) ==
                      """
-                     * def get_root(client \\\\ %Tesla.Client{}, config)
+
+                                     def get_root(client \\\\ %Tesla.Client{}, config)
 
                        @spec get_root(client :: Tesla.Client.t(), config :: get_root_config()) ::
                                get_root_response()
 
                      `GET` `/`
 
-
-
                      """
 
       assert_value iex_h(module_name.list()) ==
                      """
-                     * def list(client \\\\ %Tesla.Client{}, config)
-      
+
+                                       def list(client \\\\ %Tesla.Client{}, config)
+
                      delegate_to: OpenAPICompiler.PathTest.BasePaths.get_root/2
-      
-      
+
                      """
     end
   end

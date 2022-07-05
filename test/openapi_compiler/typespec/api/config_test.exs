@@ -73,7 +73,7 @@ defmodule OpenAPICompiler.Typespec.Api.ConfigTest do
                            optional(:headers) => foo_header(),
                            optional(:opts) => Tesla.Env.opts()
                          }
-      
+
                    """
     end
   end
