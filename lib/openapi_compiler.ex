@@ -36,21 +36,20 @@ defmodule OpenAPICompiler do
 
       @moduledoc OpenAPICompiler.Description.description(context)
 
-      @schema schema
       @context context
-      @server server
 
       for external_resource <- external_resources do
         @external_resource external_resource
       end
 
       @doc false
-      def __schema__, do: @schema
+      @spec __schema__ :: [map]
+      def __schema__, do: @context.schema
 
       use Tesla
 
       plug(OpenAPICompiler.Middleware.PathParams)
-      plug(OpenAPICompiler.Middleware.Server, @server)
+      plug(OpenAPICompiler.Middleware.Server, @context)
       plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
       plug(Tesla.Middleware.Logger)
       plug(Tesla.Middleware.Opts, context: @context)

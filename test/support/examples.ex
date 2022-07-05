@@ -61,3 +61,17 @@ defmodule Internal do
   use OpenAPICompiler,
     yml_path: Application.app_dir(:openapi_compiler, "priv/examples/internal.yaml")
 end
+
+defmodule MultiServer do
+  use OpenAPICompiler,
+    yml_path: Application.app_dir(:openapi_compiler, "priv/examples/multi-server.yaml"),
+    server: &__MODULE__.server/0
+
+  def server do
+    receive do
+      {:server, server} -> server
+    after
+      1_000 -> raise "no server received"
+    end
+  end
+end

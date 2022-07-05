@@ -109,7 +109,7 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     ]
   end
 
-  defp add_request_body(config, _, _),
+  defp add_request_body(config, _name, _request_body_definition),
     do: [
       optional_ast(
         true,
@@ -161,7 +161,7 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
                 server_parameters()
               end
 
-            _ ->
+            _other ->
               quote location: :keep do
                 unquote(base_module).server_parameters()
               end
@@ -174,7 +174,7 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     end
   end
 
-  defp add_server(_, _, _, _) do
+  defp add_server(_config, _server, _context, _caller) do
     # TODO: Implement
     raise "Only one global server is supported"
   end
@@ -217,7 +217,7 @@ defmodule OpenAPICompiler.Typespec.Api.Config do
     )
   end
 
-  def request_body_type(_, _, _) do
+  def request_body_type(_request_body_definition, _context, _caller) do
     quote location: :keep do
       any()
     end

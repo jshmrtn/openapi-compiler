@@ -38,4 +38,15 @@ defmodule OpenAPICompilerTest do
                body: %{coutry: "CH", city: "St. Gallen", street: "Neugasse 51"}
              })
   end
+
+  test "chooses server on runtime" do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{url: "https://int.localhost/"} -> %Tesla.Env{status: 200, body: "ok"}
+      %Tesla.Env{url: "https://prod.localhost/"} -> %Tesla.Env{status: 400, body: "nok"}
+    end)
+
+    send(self(), {:server, "Integration"})
+
+    assert {:ok, {200, "ok", _env}} = MultiServer.test(%{})
+  end
 end

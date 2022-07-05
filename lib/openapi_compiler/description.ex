@@ -39,7 +39,7 @@ defmodule OpenAPICompiler.Description do
     end)
   end
 
-  defp add_description_text(acc, false, _), do: acc
+  defp add_description_text(acc, false, _callback), do: acc
 
   defp add_description_text(acc, true, callback) do
     """

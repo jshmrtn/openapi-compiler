@@ -16,7 +16,7 @@ defmodule OpenAPICompiler.Component.Schema do
 
         case @type do
           [] -> @moduledoc false
-          _ -> @moduledoc "TODO"
+          _other -> @moduledoc "TODO"
         end
       end
     end

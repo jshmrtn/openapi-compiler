@@ -1,3 +1,4 @@
+# credo:disable-for-this-file Credo.Check.Readability.Specs
 defmodule OpenAPICompiler.Typespec.ServerTest do
   @moduledoc false
 
@@ -86,7 +87,10 @@ defmodule OpenAPICompiler.Typespec.ServerTest do
       )
 
       assert_value iex_t(module_name.server_parameters()) ==
-                     "No type information for OpenAPICompiler.Typespec.ServerTest.ServerTypespecSimple.server_parameters was found or OpenAPICompiler.Typespec.ServerTest.ServerTypespecSimple.server_parameters is private\n"
+                     """
+                     @type server_parameters() :: %{}
+
+                     """
     end
   end
 
@@ -99,12 +103,6 @@ defmodule OpenAPICompiler.Typespec.ServerTest do
                    |> Code.format_string!()
                    |> IO.iodata_to_binary() ==
                      "@type :type :: %{optional(:env) => :prod | :test | :dev, optional(:port) => String.t()}"
-    end
-
-    test "simple" do
-      assert_raise FunctionClauseError, fn ->
-        type(@server_simple, @context, Read)
-      end
     end
   end
 end

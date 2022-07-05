@@ -7,7 +7,7 @@ defmodule OpenAPICompiler.Context do
           components_schema_read_module: atom,
           components_schema_write_module: atom,
           external_resources: [Path.t()],
-          server: map
+          server: map | (() -> map)
         }
 
   @enforce_keys [
@@ -40,7 +40,7 @@ defmodule OpenAPICompiler.Context do
         %{schema: schema} = opts ->
           %{opts | schema: lookup_refs(schema)}
 
-        _ ->
+        _opts ->
           raise OpenAPICompiler.InvalidOptsError, message: "Schema not provided"
       end
       |> lookup_server
@@ -120,7 +120,7 @@ defmodule OpenAPICompiler.Context do
 
   defp lookup_refs(schema), do: lookup_refs(schema, schema, 1000)
 
-  defp lookup_refs(_, roots, 0), do: raise(OpenAPICompiler.CircularRefError, schema: roots)
+  defp lookup_refs(_schema, roots, 0), do: raise(OpenAPICompiler.CircularRefError, schema: roots)
 
   defp lookup_refs(%{"$ref" => path}, roots, depth) do
     "#/" <> local_path = path
@@ -146,41 +146,63 @@ defmodule OpenAPICompiler.Context do
     Enum.map(node, &lookup_refs(&1, roots, depth))
   end
 
-  defp lookup_refs(other, _, _), do: other
+  defp lookup_refs(other, _roots, _depth), do: other
+
+  defp lookup_server(opts)
+  defp lookup_server(%{server: server} = opts) when is_function(server, 0), do: opts
+
+  defp lookup_server(%{schema: schema} = opts) do
+    case validate_server(schema, opts[:server]) do
+      {:ok, server} -> Map.put(opts, :server, server)
+      {:error, message} -> raise OpenAPICompiler.InvalidOptsError, message: message
+    end
+  end
+
+  @spec load_server(context :: t()) :: map
+  def load_server(context)
+  def load_server(%__MODULE__{server: server}) when is_map(server), do: server
+
+  def load_server(%__MODULE__{server: server, schema: schema}) when is_function(server, 0) do
+    case validate_server(schema, server.()) do
+      {:ok, server} -> server
+      {:error, message} -> raise OpenAPICompiler.InvalidOptsError, message: message
+    end
+  end
 
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
-  defp lookup_server(%{schema: schema} = opts) do
+  defp validate_server(schema, server) do
     servers =
       schema
       |> Enum.map(& &1["servers"])
       |> Enum.reject(&is_nil/1)
       |> List.flatten()
 
-    case {servers, opts[:server]} do
+    case {servers, server} do
       {[], nil} ->
-        raise OpenAPICompiler.InvalidOptsError,
-          message: "No server was defined"
+        {:error, "No server was defined"}
 
-      {_, %{}} ->
-        opts
+      {[_first, _second | _others], nil} ->
+        {:error, "No server was defined"}
+
+      {_servers, %{} = server} ->
+        {:ok, server}
 
       {[server], nil} ->
-        Map.put(opts, :server, server)
+        {:ok, server}
 
       {servers, server_index}
       when is_integer(server_index) and server_index >= 0 and server_index < length(servers) ->
-        Map.put(opts, :server, Enum.at(servers, server_index))
+        {:ok, Enum.at(servers, server_index)}
 
       {servers, server_selector} when is_binary(server_selector) ->
         servers
-        |> Enum.filter(&(&1["description"] == server_selector or &1["url"] == server_selector))
+        |> Enum.find(&(&1["description"] == server_selector or &1["url"] == server_selector))
         |> case do
-          [] ->
-            raise OpenAPICompiler.InvalidOptsError,
-              message: "Server #{server_selector} not found"
+          nil ->
+            {:error, "Server #{server_selector} not found"}
 
-          [server | _] ->
-            Map.put(opts, :server, server)
+          server ->
+            {:ok, server}
         end
     end
   end
@@ -188,7 +210,7 @@ defmodule OpenAPICompiler.Context do
   defimpl Inspect do
     @spec inspect(input :: OpenAPICompiler.Context.t(), opts :: Inspect.Opts.t()) ::
             Inspect.Algebra.t()
-    def inspect(%OpenAPICompiler.Context{base_module: module}, _) do
+    def inspect(%OpenAPICompiler.Context{base_module: module}, _opts) do
       "#OpenAPICompiler.Context<#{module}>"
     end
   end

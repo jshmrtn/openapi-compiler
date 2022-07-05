@@ -5,6 +5,7 @@ defmodule OpenAPICompiler.Middleware.ServerTest do
 
   import OpenAPICompiler.Middleware.Server
 
+  alias OpenAPICompiler.Context
   alias Tesla.Env
 
   doctest OpenAPICompiler.Middleware.Server
@@ -23,14 +24,25 @@ defmodule OpenAPICompiler.Middleware.ServerTest do
                    opts: [server_parameters: %{:host => "example.com", "port" => "8080"}]
                  },
                  [],
-                 %{
-                   "url" => "https://{host}:{port}/{path}",
-                   "variables" => %{
-                     "host" => %{"default" => "localhost"},
-                     "port" => %{"default" => "443"},
-                     "path" => %{"default" => "foo"}
-                   }
-                 }
+                 Context.create(
+                   %{
+                     schema: [
+                       %{
+                         "servers" => [
+                           %{
+                             "url" => "https://{host}:{port}/{path}",
+                             "variables" => %{
+                               "host" => %{"default" => "localhost"},
+                               "port" => %{"default" => "443"},
+                               "path" => %{"default" => "foo"}
+                             }
+                           }
+                         ]
+                       }
+                     ]
+                   },
+                   __MODULE__
+                 )
                )
     end
   end

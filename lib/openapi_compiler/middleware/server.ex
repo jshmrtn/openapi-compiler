@@ -3,17 +3,19 @@ defmodule OpenAPICompiler.Middleware.Server do
 
   @behaviour Tesla.Middleware
 
+  alias OpenAPICompiler.Context
   alias Tesla.Middleware.BaseUrl
 
   @impl Tesla.Middleware
-  def call(%Tesla.Env{opts: opts, url: url} = env, next, server) do
+  def call(%Tesla.Env{opts: opts, url: url} = env, next, context) do
     url
     |> URI.parse()
     |> case do
       %URI{scheme: scheme, host: host} when not is_nil(scheme) and not is_nil(host) ->
         Tesla.run(env, next)
 
-      _ ->
+      _uri ->
+        server = Context.load_server(context)
         BaseUrl.call(env, next, replace_variables(server, opts))
     end
   end

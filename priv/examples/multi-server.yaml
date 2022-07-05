@@ -1,0 +1,19 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Multiserver
+  license:
+    name: MIT
+servers:
+  - url: "https://prod.localhost"
+    description: "Production"
+  - url: "https://int.localhost"
+    description: "Integration"
+paths:
+  /:
+    get:
+      operationId: test
+      responses:
+        200:
+          content:
+            text/plain: {}

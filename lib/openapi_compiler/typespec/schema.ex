@@ -46,7 +46,7 @@ defmodule OpenAPICompiler.Typespec.Schema do
           unquote(type_name(name))()
         end
 
-      _ ->
+      _other ->
         quote location: :keep do
           unquote(module).unquote(type_name(name))
         end
@@ -67,21 +67,21 @@ defmodule OpenAPICompiler.Typespec.Schema do
           unquote(type_name(name))()
         end
 
-      _ ->
+      _other ->
         quote location: :keep do
           unquote(module).unquote(type_name(name))
         end
     end
   end
 
-  def type(%{"type" => "string", "format" => binary_format}, _, _, _)
+  def type(%{"type" => "string", "format" => binary_format}, _mode, _context, _caller)
       when binary_format in ["byte", "binary"] do
     quote location: :keep do
       binary()
     end
   end
 
-  def type(%{"type" => "string", "enum" => options}, :write, _, _) do
+  def type(%{"type" => "string", "enum" => options}, :write, _context, _caller) do
     options
     |> Enum.map(&String.to_atom/1)
     |> Enum.reduce(nil, fn
@@ -90,32 +90,32 @@ defmodule OpenAPICompiler.Typespec.Schema do
     end)
   end
 
-  def type(%{"type" => "string"}, _, _, _) do
+  def type(%{"type" => "string"}, _mode, _context, _caller) do
     quote location: :keep do
       String.t()
     end
   end
 
-  def type(%{"type" => "boolean"}, _, _, _) do
+  def type(%{"type" => "boolean"}, _mode, _context, _caller) do
     quote location: :keep do
       boolean()
     end
   end
 
-  def type(%{"type" => "number", "format" => format}, _, _, _)
+  def type(%{"type" => "number", "format" => format}, _mode, _context, _caller)
       when format in ["float", "double"] do
     quote location: :keep do
       float()
     end
   end
 
-  def type(%{"type" => "number"}, _, _, _) do
+  def type(%{"type" => "number"}, _mode, _context, _caller_) do
     quote location: :keep do
       float() | integer()
     end
   end
 
-  def type(%{"type" => "integer"}, _, _, _) do
+  def type(%{"type" => "integer"}, _mode, _context, _caller) do
     quote location: :keep do
       integer()
     end
@@ -127,7 +127,7 @@ defmodule OpenAPICompiler.Typespec.Schema do
     end
   end
 
-  def type(%{"type" => "array"}, _, _, _) do
+  def type(%{"type" => "array"}, _mode, _context, _caller) do
     quote location: :keep do
       list()
     end
@@ -210,13 +210,13 @@ defmodule OpenAPICompiler.Typespec.Schema do
      |> Enum.reject(&is_nil/1)}
   end
 
-  def type(%{"type" => "object"}, _, _, _) do
+  def type(%{"type" => "object"}, _mode, _context, _caller) do
     quote location: :keep do
       map()
     end
   end
 
-  def type(%{"type" => type} = definition, _, context, _) do
+  def type(%{"type" => type} = definition, _mode, context, _caller) do
     raise OpenAPICompiler.UnknownTypeError, definition: definition, type: type, context: context
   end
 
@@ -235,9 +235,9 @@ defmodule OpenAPICompiler.Typespec.Schema do
     end)
     |> Enum.reduce(%{}, fn value, acc ->
       Map.merge(acc, value, fn
-        _, %{} = old_value, %{} = new_value -> Map.merge(old_value, new_value)
-        _, [_ | _] = old_value, [_ | _] = new_value -> old_value ++ new_value
-        _, _, new_value -> new_value
+        _key, %{} = old_value, %{} = new_value -> Map.merge(old_value, new_value)
+        _key, [_ | _] = old_value, [_ | _] = new_value -> old_value ++ new_value
+        _key, _old_value, new_value -> new_value
       end)
     end)
     |> Map.drop([:__ref__])
@@ -251,11 +251,11 @@ defmodule OpenAPICompiler.Typespec.Schema do
     |> property(name, mode, required, context, caller)
   end
 
-  defp property(%{"readOnly" => true}, _, :write, _, _, _) do
+  defp property(%{"readOnly" => true}, _name, :write, _required, _context, _caller) do
     nil
   end
 
-  defp property(%{"writeOnly" => true}, _, :read, _, _, _) do
+  defp property(%{"writeOnly" => true}, _name, :read, _required, _context, _caller) do
     nil
   end
 
@@ -278,14 +278,14 @@ defmodule OpenAPICompiler.Typespec.Schema do
         {name, String.split(ref, "/")}
       end)
       |> Enum.find({name, search_path}, fn
-        {_, path} when search_path == path -> true
-        {_, _} -> false
+        {_name, path} when search_path == path -> true
+        {_name, _path} -> false
       end)
 
     name
   end
 
-  defp discriminator_name(%{__ref__: ["components", "schemas", name]}, _) do
+  defp discriminator_name(%{__ref__: ["components", "schemas", name]}, _search_path) do
     name
   end
 end

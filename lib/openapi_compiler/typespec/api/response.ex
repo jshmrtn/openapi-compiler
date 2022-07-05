@@ -33,7 +33,7 @@ defmodule OpenAPICompiler.Typespec.Api.Response do
         {_media_type, media_type_definition = %{}} ->
           media_type_definition["schema"]
 
-        _ ->
+        _other ->
           nil
       end)
       |> Enum.uniq()
@@ -76,7 +76,7 @@ defmodule OpenAPICompiler.Typespec.Api.Response do
         any()
       end,
       fn
-        value, {:any, _, _} -> value
+        value, {:any, _ctx, _args} -> value
         value, acc -> {:|, [], [value, acc]}
       end
     )
