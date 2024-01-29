@@ -11,7 +11,7 @@ defmodule OpenAPICompiler.Middleware.Server do
     url
     |> URI.parse()
     |> case do
-      %URI{scheme: scheme, host: host} when not is_nil(scheme) and not is_nil(host) ->
+      %URI{scheme: scheme, host: host} when is_binary(scheme) and is_binary(host) ->
         Tesla.run(env, next)
 
       _uri ->
