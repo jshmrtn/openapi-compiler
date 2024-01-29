@@ -9,7 +9,7 @@ defmodule OpenAPICompiler.MixProject do
     [
       app: :openapi_compiler,
       version: @version,
-      elixir: "~> 1.9",
+      elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer:
@@ -75,7 +75,8 @@ defmodule OpenAPICompiler.MixProject do
     [
       name: :openapi_compiler,
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
-      maintainers: ["Jonatan Männchen"],
+      authors: ["Jonatan Männchen"],
+      maintainers: ["Antonio Toncetti"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/jshmrtn/openapi-compiler"}
     ]

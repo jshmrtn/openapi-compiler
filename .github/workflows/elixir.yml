@@ -18,8 +18,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/cache@v1
         id: cache
         with:
@@ -50,8 +50,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps
@@ -89,8 +89,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        otp: [21.3, 22.2]
-        elixir: [1.9.4, 1.10.2]
+        otp: [25.3, 26.2]
+        elixir: [1.14.5, 1.16.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -138,8 +138,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps
@@ -179,8 +179,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps
@@ -201,8 +201,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        otp: [21.3, 22.2]
-        elixir: [1.9.4, 1.10.2]
+        otp: [25.3, 26.2]
+        elixir: [1.14.5, 1.16.0]
 
     needs: ['deps', 'compile_test']
 
@@ -241,8 +241,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps
@@ -271,8 +271,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps
@@ -313,8 +313,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps
@@ -347,8 +347,8 @@ jobs:
       - uses: textbook/git-checkout-submodule-action@master
       - uses: actions/setup-elixir@v1
         with:
-          otp-version: 22.2
-          elixir-version: 1.10.2
+          otp-version: 26.2
+          elixir-version: 1.16
       - uses: actions/download-artifact@master
         with:
           name: deps

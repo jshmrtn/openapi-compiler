@@ -7,7 +7,7 @@ defmodule OpenAPICompiler.Context do
           components_schema_read_module: atom,
           components_schema_write_module: atom,
           external_resources: [Path.t()],
-          server: map | (() -> map)
+          server: map | (-> map)
         }
 
   @enforce_keys [

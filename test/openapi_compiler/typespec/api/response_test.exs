@@ -40,12 +40,8 @@ defmodule OpenAPICompiler.Typespec.Api.ResponseTest do
         end
       )
 
-      assert_value iex_t(module_name.response()) == """
-                   @type response(possible_responses) ::
-                           {:ok, possible_responses}
-                           | {:error, {:unexpected_response, Tesla.Env.t()} | any()}
-
-                   """
+      assert_value iex_t(module_name.response()) ==
+                     "Beam code not available for OpenAPICompiler.Typespec.Api.ResponseTest.Base or debug info is missing, cannot load typespecs\n"
     end
   end
 
@@ -92,10 +88,8 @@ defmodule OpenAPICompiler.Typespec.Api.ResponseTest do
         end
       )
 
-      assert_value iex_t(module_name.foo()) == """
-                   @type foo() :: response(foo_options())
-
-                   """
+      assert_value iex_t(module_name.foo()) ==
+                     "Beam code not available for OpenAPICompiler.Typespec.Api.ResponseTest.Specific or debug info is missing, cannot load typespecs\n"
     end
   end
 

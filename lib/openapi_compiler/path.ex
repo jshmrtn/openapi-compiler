@@ -248,7 +248,7 @@ defmodule OpenAPICompiler.Path do
       |> Enum.group_by(&elem(&1, 0))
       |> Enum.map(fn {tag, endpoints} ->
         {tag
-         |> String.replace(~R/[^\w\d_]+/, "_", global: true)
+         |> String.replace(~r/[^\w\d_]+/, "_", global: true)
          |> String.replace("__", "_", global: true)
          |> Macro.camelize(), endpoints}
       end)
@@ -273,9 +273,9 @@ defmodule OpenAPICompiler.Path do
   @spec normalize_name(name :: String.t()) :: atom
   def normalize_name(name) do
     name
-    |> String.replace(~R/[^\w]/, "_", global: true)
+    |> String.replace(~r/[^\w]/, "_", global: true)
     |> Macro.underscore()
-    |> String.replace(~R/_+/, "_", global: true)
+    |> String.replace(~r/_+/, "_", global: true)
     |> String.trim("_")
     |> String.to_atom()
   end
